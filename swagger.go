@@ -15,138 +15,6 @@ import (
 // WrapHandler wraps swaggerFiles.Handler and returns http.HandlerFunc.
 var WrapHandler = Handler()
 
-// URLsConfig stores multiple swagger json uris and names.
-type URLsConfig struct {
-	URL  string `json:"url"`
-	Name string `json:"name"`
-}
-
-// Config stores httpSwagger configuration variables.
-type Config struct {
-	// The url pointing to API definition (normally swagger.json or swagger.yaml). Default is `doc.json`.
-	URL                  string
-	URLs                 []URLsConfig
-	DocExpansion         string
-	DomID                string
-	InstanceName         string
-	BeforeScript         template.JS
-	AfterScript          template.JS
-	Plugins              []template.JS
-	UIConfig             map[template.JS]template.JS
-	DeepLinking          bool
-	PersistAuthorization bool
-}
-
-// URL presents the url pointing to API definition (normally swagger.json or swagger.yaml).
-func URL(url string) func(*Config) {
-	return func(c *Config) {
-		c.URL = url
-	}
-}
-
-// URLs adds the url pointing to API definition (normally swagger.json or swagger.yaml) to the list of URLs.
-func URLs(url string, name string) func(*Config) {
-	return func(c *Config) {
-		c.URLs = append(c.URLs, URLsConfig{URL: url, Name: name})
-	}
-}
-
-// DeepLinking true, false.
-func DeepLinking(deepLinking bool) func(*Config) {
-	return func(c *Config) {
-		c.DeepLinking = deepLinking
-	}
-}
-
-// DocExpansion list, full, none.
-func DocExpansion(docExpansion string) func(*Config) {
-	return func(c *Config) {
-		c.DocExpansion = docExpansion
-	}
-}
-
-// DomID #swagger-ui.
-func DomID(domID string) func(*Config) {
-	return func(c *Config) {
-		c.DomID = domID
-	}
-}
-
-// InstanceName set the instance name that was used to generate the swagger documents
-// Defaults to swag.Name ("swagger").
-func InstanceName(name string) func(*Config) {
-	return func(c *Config) {
-		c.InstanceName = name
-	}
-}
-
-// PersistAuthorization Persist authorization information over browser close/refresh.
-// Defaults to false.
-func PersistAuthorization(persistAuthorization bool) func(*Config) {
-	return func(c *Config) {
-		c.PersistAuthorization = persistAuthorization
-	}
-}
-
-// Plugins specifies additional plugins to load into Swagger UI.
-func Plugins(plugins []string) func(*Config) {
-	return func(c *Config) {
-		vs := make([]template.JS, len(plugins))
-		for i, v := range plugins {
-			vs[i] = template.JS(v)
-		}
-		c.Plugins = vs
-	}
-}
-
-// UIConfig specifies additional SwaggerUIBundle config object properties.
-func UIConfig(props map[string]string) func(*Config) {
-	return func(c *Config) {
-		vs := make(map[template.JS]template.JS, len(props))
-		for k, v := range props {
-			vs[template.JS(k)] = template.JS(v)
-		}
-		c.UIConfig = vs
-	}
-}
-
-// BeforeScript holds JavaScript to be run right before the Swagger UI object is created.
-func BeforeScript(js string) func(*Config) {
-	return func(c *Config) {
-		c.BeforeScript = template.JS(js)
-	}
-}
-
-// AfterScript holds JavaScript to be run right after the Swagger UI object is created
-// and set on the window.
-func AfterScript(js string) func(*Config) {
-	return func(c *Config) {
-		c.AfterScript = template.JS(js)
-	}
-}
-
-func newConfig(configFns ...func(*Config)) *Config {
-	config := Config{
-		URL:                  "doc.json",
-		URLs:                 nil,
-		DocExpansion:         "list",
-		DomID:                "swagger-ui",
-		InstanceName:         "swagger",
-		DeepLinking:          true,
-		PersistAuthorization: false,
-	}
-
-	for _, fn := range configFns {
-		fn(&config)
-	}
-
-	if config.InstanceName == "" {
-		config.InstanceName = swag.Name
-	}
-
-	return &config
-}
-
 // Handler wraps `http.Handler` into `http.HandlerFunc`.
 func Handler(configFns ...func(*Config)) http.HandlerFunc {
 	var once sync.Once
@@ -283,7 +151,6 @@ const indexTempl = `<!-- HTML for static distribution bundle build -->
 <script src="./swagger-ui-standalone-preset.js"> </script>
 <script>
 window.onload = function() {
-
   {{- if .BeforeScript}}
   {{.BeforeScript}}
   {{- end}}
@@ -293,6 +160,15 @@ window.onload = function() {
     docExpansion: "{{.DocExpansion}}",
     dom_id: "#{{.DomID}}",
     persistAuthorization: {{.PersistAuthorization}},
+    displayOperationId: {{.DisplayOperationID}},
+    defaultModelsExpandDepth: {{.DefaultModelsExpandDepth}},
+    defaultModelExpandDepth: {{.DefaultModelExpandDepth}},
+    defaultModelRendering: "{{.DefaultModelRendering}}",
+    displayRequestDuration: {{.DisplayRequestDuration}},
+    showExtensions: {{.ShowExtensions}},
+    showCommonExtensions: {{.ShowCommonExtensions}},
+    supportedSubmitMethods: {{.SupportedSubmitMethods}},
+    tryItOutEnabled: {{.TryItOutEnabled}},
     validatorUrl: null,
     presets: [
       SwaggerUIBundle.presets.apis,
